@@ -1,0 +1,33 @@
+
+
+make a function called split
+
+void split(Stream<List<int>> inputStream, List<int> lengths, void Function(List<Int>) onSplit);
+
+
+let's say the stream consists of 20 Lists of 32 ints each, in general case, the stream is not consitent, but for example sake, I'm saying the stream will emit 20 events with lists of length 32 each
+
+so the total number of ints that are in the stream is 20 * 32 = 640
+
+lengths is the list of length of chunks, the stream must be split
+
+so if you add all the elements in lengths, you'll get 640 in this example
+
+let's say the first element of lengths is 48
+
+then you should wait for two events to get the first 32 elements and then 16 elements from the second event and call onSplit with the first 32 and second 16 elements combined, and also store the next remaining 16 elements for later use
+
+let's say the second element of lengths is 15
+
+since you already have the remaining 16 elements from second event, you could call onSplit right away with the 15 elements out of 16 remaining elements, and store the 1 element for later
+
+let's say third element of lengths is 33
+
+await for the third event, and now you have the 1 element from the previous event, and all the 32 elements from this event, append all of them to a list and call onSplit
+
+and repeat it until stream finishes, or lengths finish
+
+and as I said the real values would be very inconsistent, but always will be greater than 0 tho, but lengths could be as low as 1 or as max value, same with stream events, lists could be just 1 element, or as long as possible
+
+
+

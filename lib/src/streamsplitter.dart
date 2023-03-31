@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:multicontent/multicontent.dart';
@@ -10,74 +9,130 @@ class MultiContentSplitter {
 
   const MultiContentSplitter(this.contentType, this.stream);
 
-  void split(
-      void Function(Uint8List chunk, String contentType, String additionalInfo)
-          onPart) async {
+  Stream<ByteMultiContentPart> split() async* {
     final contentTypes = MultiContentType.parseContentType(contentType);
     if (contentTypes.isEmpty) {
       throw RangeError("Content Types is Empty");
     }
 
     var index = 0;
+    var buffer = Uint8List(contentTypes.first.length);
+    var bufferFilled = 0;
 
-    var currentChunkLength = contentTypes.first.length;
-    var buffer = Uint8Buffer(currentChunkLength);
+    // bool next() {
+    //   final contentType = contentTypes[index].contentType;
+    //   final additionalInfo = contentTypes[index].additionalInfo;
+    //   final part = ByteMultiContentPart(
+    //       bytes: buffer,
+    //       contentType: contentType,
+    //       additionalInfo: additionalInfo);
+    //   // onPart(part);
 
-    bool next() {
-      onPart(buffer.buffer, contentTypes[index].contentType,
-          contentTypes[index].additionalInfo);
-      if (index + 1 >= contentTypes.length) {
-        return false;
-      }
-      index++;
-      buffer.reset(contentTypes[index].length);
-      return true;
-    }
+    //   index += 1;
+    //   if (index >= contentTypes.length) {
+    //     return false;
+    //   }
+
+    //   buffer = Uint8List(contentTypes[index].length);
+    //   bufferFilled = 0;
+
+    //   return true;
+    // }
 
     await for (final chunk in stream) {
-      final len = chunk.length;
       var chunkRead = 0;
-      while (true) {
-        final remainingSpace = buffer.remainingSpace;
-        if (remainingSpace < len) {
-          final end = min(len, remainingSpace);
-          buffer.push(chunk.sublist(chunkRead, end));
-          if (!next()) {
-            return;
-          }
-          chunkRead += remainingSpace;
-        } else {
+      while (chunkRead < chunk.length) {
+        final bufferRemainingSpace = buffer.length - bufferFilled;
+        final chunkRemainingToRead = chunk.length - chunkRead;
+        if (bufferRemainingSpace > chunkRemainingToRead) {
+          final requiredChunk = chunk.sublist(chunkRead);
+          buffer.setAll(bufferFilled, requiredChunk);
+          bufferFilled += chunkRemainingToRead;
           break;
+        } else {
+          final requiredChunk =
+              chunk.sublist(chunkRead, chunkRead + bufferRemainingSpace);
+          buffer.setAll(bufferFilled, requiredChunk);
+          bufferFilled += requiredChunk.length;
+          {
+            final contentType = contentTypes[index].contentType;
+            final additionalInfo = contentTypes[index].additionalInfo;
+            final part = ByteMultiContentPart(
+                bytes: buffer,
+                contentType: contentType,
+                additionalInfo: additionalInfo);
+            // onPart(part);
+            yield part;
+
+            index += 1;
+            if (index >= contentTypes.length) {
+              return;
+            }
+
+            buffer = Uint8List(contentTypes[index].length);
+            bufferFilled = 0;
+          }
+          // if (!next()) {
+          //   return;
+          // }
+          chunkRead += bufferRemainingSpace;
         }
       }
     }
-  }
-}
 
-class Uint8Buffer {
-  Uint8List _buffer;
-  var _filled = 0;
+    if (index < contentType.length) {
+      // next();
+      {
+        if (buffer.isEmpty || bufferFilled == 0) {
+          return;
+        }
+        final contentType = contentTypes[index].contentType;
+        final additionalInfo = contentTypes[index].additionalInfo;
+        final part = ByteMultiContentPart(
+            bytes: buffer,
+            contentType: contentType,
+            additionalInfo: additionalInfo);
+        // onPart(part);
+        yield part;
 
-  Uint8Buffer(int capacity) : _buffer = Uint8List(capacity);
+        index += 1;
+        if (index >= contentTypes.length) {
+          return;
+        }
 
-  void push(Iterable<int> iterable) {
-    _buffer.setAll(_filled, iterable);
-  }
-
-  void reset(int newLength) {
-    _filled = 0;
-    if (newLength < capacity) {
-      _buffer = Uint8List.sublistView(_buffer, 0, newLength);
-    } else if (newLength > capacity) {
-      _buffer = Uint8List(newLength);
+        buffer = Uint8List(contentTypes[index].length);
+        bufferFilled = 0;
+      }
     }
   }
-
-  Uint8List get buffer => Uint8List.fromList(_buffer);
-
-  int get length => _filled;
-
-  int get capacity => _buffer.length;
-
-  int get remainingSpace => capacity - length;
 }
+
+// class Uint8Buffer {
+//   Uint8List _buffer;
+//   var _filled = 0;
+
+//   Uint8Buffer(int capacity) : _buffer = Uint8List(capacity);
+
+//   void push(Iterable<int> iterable) {
+//     _buffer.setAll(_filled, iterable);
+//   }
+
+//   void reset(int newLength) {
+//     _filled = 0;
+//     if (newLength < capacity) {
+//       _buffer = Uint8List.sublistView(_buffer, 0, newLength);
+//     } else if (newLength > capacity) {
+//       _buffer = Uint8List(newLength);
+//     }
+//   }
+
+//   Uint8List get buffer => _buffer;
+
+//   Uint8List get copyBuffer => Uint8List.fromList(_buffer);
+
+//   int get length => _filled;
+
+//   int get capacity => _buffer.length;
+
+//   int get remainingSpace => capacity - length;
+// }

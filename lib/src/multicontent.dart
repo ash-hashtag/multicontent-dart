@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:multicontent/src/multicontent_part.dart';
 
 class MultiContent {
@@ -20,28 +21,25 @@ class MultiContent {
 
   Future<String> getContentType() async {
     final lengths = await getEachLength();
-    
-    // var index = 0;
 
     final contentTypes = <MultiContentType>[];
 
     for (var i = 0; i < parts.length; i++) {
       final length = lengths[i];
       final part = parts[i];
-      contentTypes.add(MultiContentType(length: length, contentType: part.contentType, additionalInfo: part.additionalInfo));
-      // contentType +=
-      //     '${MultiContentType(index: index, contentType: contentType, additionalInfo: parts[i].additionalInfo()).encode()}|';
-      // index += length;
+      contentTypes.add(MultiContentType(
+          length: length,
+          contentType: part.contentType,
+          additionalInfo: part.additionalInfo));
     }
 
     return MultiContentType.encodeContentType(contentTypes);
   }
 
-  static void fromStream(Stream<List<int>> stream, String contentType, void Function(Stream<List<int>>, int, String) onPart) {
+  static void fromStream(Stream<List<int>> stream, String contentType,
+      void Function(Stream<List<int>>, int, String) onPart) {
     final multiContentTypes = MultiContentType.parseContentType(contentType);
-
   }
-
 }
 
 class MultiContentType {
@@ -104,7 +102,8 @@ class MultiContentType {
   }
 
   @override
-  String toString() => "{ length: $length, contentType: $contentType, additionalInfo: $additionalInfo }";
+  String toString() =>
+      "{ length: $length, contentType: $contentType, additionalInfo: $additionalInfo }";
 
   static String encodeContentType(List<MultiContentType> contentTypes) {
     var contentType = "multicontent ";
@@ -113,10 +112,4 @@ class MultiContentType {
 
     return contentType;
   }
-
 }
-
-/*
-I'd like to make a simple and very compressed string encoder and decoder, that takes a list of class Foo {int num, string s, string f} and converts them to a very compressed string, which should also be able to parse them back.
-
-*/

@@ -53,6 +53,10 @@ class ByteMultiContentPart extends MultiContentPart {
 
   @override
   Future<int> length() async => bytes.length;
+
+  @override
+  String toString() =>
+      "ByteMultiContentPart { length: ${bytes.length}, contentType: $contentType }";
 }
 
 class StreamMultiContentPart extends MultiContentPart {
