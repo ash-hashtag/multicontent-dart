@@ -35,11 +35,6 @@ class MultiContent {
 
     return MultiContentType.encodeContentType(contentTypes);
   }
-
-  static void fromStream(Stream<List<int>> stream, String contentType,
-      void Function(Stream<List<int>>, int, String) onPart) {
-    final multiContentTypes = MultiContentType.parseContentType(contentType);
-  }
 }
 
 class MultiContentType {
