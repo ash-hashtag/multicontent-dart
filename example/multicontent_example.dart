@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -101,6 +102,54 @@ Future<void> testByteMultiContents() async {
   }
 }
 
+String fileBaseName(String path) {
+  if (path.contains('\\')) {
+    return path.split('\\').last;
+  } else {
+    return path.split('/').last;
+  }
+}
+
+Future<void> testFiles() async {
+  final dir = Directory("./test-files");
+  final files = List<File>.from(await dir.list().toList());
+
+  final parts = files
+      .map((file) => FileMultiContentPart(
+          file: file, additionalInfo: fileBaseName(file.path)))
+      .toList();
+
+  final multiContent = MultiContent(parts);
+
+  final contentType = await multiContent.getContentType();
+  final stream = multiContent.getStream();
+  final splitter = MultiContentSplitter(contentType, stream);
+
+  // var i = 0;
+  await for (final part in splitter.split()) {
+    await File("./output/${part.additionalInfo}").writeAsBytes(part.bytes);
+  }
+}
+
+Future<void> testTestFiles() async {
+  final dir = Directory("./test-files");
+  final files = List<File>.from(await dir.list().toList());
+
+  final parts = files
+      .map((file) => FileMultiContentPart(
+          file: file, additionalInfo: fileBaseName(file.path)))
+      .toList();
+
+  final multiContent = MultiContent(parts);
+
+  final contentType = await multiContent.getContentType();
+  final stream = multiContent.getStream();
+  final splitter = MultiContentSplitter(contentType, stream);
+  await splitter.splitAndWriteToFiles(Directory("./output")).toList();
+}
+
 void main() {
-  testByteMultiContents();
+  // testByteMultiContents();
+  Directory("./output").deleteSync(recursive: true);
+  testTestFiles();
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:multicontent/src/multicontent_part.dart';
 
 class MultiContent {
@@ -33,9 +32,23 @@ class MultiContent {
           additionalInfo: part.additionalInfo));
     }
 
-    return MultiContentType.encodeContentType(contentTypes);
+    return encodeContentType(contentTypes);
   }
 }
+
+String encodeContentType(List<MultiContentType> contentTypes) {
+  var contentType = "multicontent ";
+
+  contentType += contentTypes.map((e) => e.encode()).join('|');
+
+  return contentType;
+}
+
+String decodeSpecialChars(String s) =>
+    s.replaceAll(r'\,', ',').replaceAll(r'\|', '|');
+
+String encodeSpecialChars(String s) =>
+    s.replaceAll(',', r'\,').replaceAll('|', r'\|');
 
 class MultiContentType {
   final int length;
@@ -49,9 +62,6 @@ class MultiContentType {
   });
 
   static List<MultiContentType> parseContentType(String multiContentType) {
-    String decodeSpecialChars(String s) =>
-        s.replaceAll(r'\,', ',').replaceAll(r'\|', '|');
-
     final partContentTypes = <MultiContentType>[];
 
     if (multiContentType.startsWith("multicontent ")) {
@@ -82,9 +92,6 @@ class MultiContentType {
   }
 
   String encode() {
-    String encodeSpecialChars(String s) =>
-        s.replaceAll(',', r'\,').replaceAll('|', r'\|');
-
     final encodedContentType = encodeSpecialChars(contentType);
 
     final s = [
@@ -99,12 +106,4 @@ class MultiContentType {
   @override
   String toString() =>
       "{ length: $length, contentType: $contentType, additionalInfo: $additionalInfo }";
-
-  static String encodeContentType(List<MultiContentType> contentTypes) {
-    var contentType = "multicontent ";
-
-    contentType += contentTypes.map((e) => e.encode()).join('|');
-
-    return contentType;
-  }
 }
